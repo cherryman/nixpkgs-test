@@ -3,7 +3,7 @@
 
   inputs = {
     flake-parts.url = "github:hercules-ci/flake-parts";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:cherryman/nixpkgs?rev=8f2d45e4191cd6fb8daf748bd5b04c5361393f7a";
   };
 
   outputs =
@@ -26,7 +26,17 @@
           ...
         }:
         {
-          packages.default = pkgs.hello;
+          packages.default = pkgs.writeShellApplication {
+            name = "test";
+            runtimeInputs = [
+              pkgs.frida-tools
+              (pkgs.python3.withPackages (ps: with ps; [ frida-python ]))
+            ];
+            text = ''
+              python3 -c "import frida; frida._frida"
+              frida --help
+            '';
+          };
         };
       flake = { };
     };
