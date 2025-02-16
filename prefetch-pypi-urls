@@ -1,0 +1,25 @@
+#!/bin/sh
+
+usage() {
+    echo >&2 "usage: $0 <package> <version>"
+}
+
+fetch_pkg_list() {
+    pkg="$1"
+    ver="$2"
+    # https://peps.python.org/pep-0691/
+    curl -sH 'Accept: application/vnd.pypi.simple.v1+json' "https://pypi.org/simple/$pkg/" |
+        jq -r ".files[] | select(.filename | startswith(\"$pkg-$ver\")) | \"\(.filename)\t\(.url)\"" |
+        while read -r name url; do
+            hash=$(nix-prefetch-url "$url" 2> /dev/null)
+            hash=$(nix hash convert --hash-algo sha256 --from nix32 --to base64 "$hash")
+            echo "$name: sha256-$hash"
+        done
+}
+
+if [ $# -ne 2 ]; then
+    usage
+    exit 1
+fi
+
+fetch_pkg_list "$1" "$2"
